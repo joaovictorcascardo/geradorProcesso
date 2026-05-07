@@ -73,69 +73,43 @@ function inferSides(
   isDropDown: boolean
 ): { s: string; e: string } {
   const isDiamondSource = from.type === 'diamond';
-  const isDiamondTarget = to.type === 'diamond';
   const lbl = (label || '').trim().toLowerCase();
   const isNo = lbl === 'não' || lbl === 'nao' || lbl === 'no';
   const isSim = lbl === 'sim' || lbl === 'yes';
 
-  // ── Source side (exit) ──
   let s: string;
+  let e: string;
+
+  // ── Lógica de Saída (Source Side) ──
   if (isDiamondSource) {
-    // Label-based: "Sim" → always RIGHT, "Não" → always BOTTOM
+    // Força o padrão: Sim para direita, Não para baixo
     if (isSim) {
       s = 'right';
     } else if (isNo) {
       s = 'bottom';
     } else {
-      // Unlabeled diamond exit (rare): use position
-      s = to.col >= from.col ? 'right' : 'bottom';
+      s = to.col > from.col ? 'right' : 'bottom';
     }
   } else {
-    // Regular node: pick the most natural exit based on relative position
-    if (from.laneIdx === to.laneIdx && from.row === to.row) {
-      s = to.col >= from.col ? 'right' : 'left';
-    } else if (to.laneIdx > from.laneIdx) {
-      s = 'bottom';
-    } else if (to.laneIdx < from.laneIdx) {
-      s = 'top';
-    } else {
-      // Same lane, different row
-      s = to.row > from.row ? 'bottom' : 'top';
-    }
+    // Nós normais: segue a posição relativa
+    if (to.col > from.col) s = 'right';
+    else if (to.laneIdx > from.laneIdx) s = 'bottom';
+    else if (to.laneIdx < from.laneIdx) s = 'top';
+    else s = 'bottom';
   }
 
-  // ── Target side (entry) ──
-  let e: string;
-  if (isDiamondTarget) {
-    // Entry into diamond: prefer left (main flow direction)
-    if (from.laneIdx < to.laneIdx) {
-      e = 'top';
-    } else if (from.laneIdx > to.laneIdx) {
-      e = 'bottom';
-    } else {
-      e = 'left';
-    }
-  } else {
-    // Regular target node
-    if (isDropDown) {
-      e = 'top';
-    } else if (from.laneIdx === to.laneIdx && from.row === to.row) {
-      if (to.col > from.col) {
-        e = 'left';
-      } else if (to.col < from.col) {
-        // backward edge (loop): enter from top
-        e = 'top';
-      } else {
-        e = 'left';
-      }
-    } else if (to.laneIdx > from.laneIdx) {
-      e = to.col > from.col ? 'left' : (to.col === from.col ? 'top' : 'top');
-    } else if (to.laneIdx < from.laneIdx) {
-      e = to.col > from.col ? 'left' : (to.col === from.col ? 'bottom' : 'bottom');
-    } else {
-      // same lane, different row
-      e = to.row > from.row ? 'top' : 'bottom';
-    }
+  // ── Lógica de Entrada (Target Side) ──
+  // Se a seta vem de cima (Dropdown/Não), entra pelo topo
+  if (isNo || to.laneIdx > from.laneIdx || (to.row > from.row && to.col === from.col)) {
+    e = 'top';
+  } 
+  // Se for um retorno (loop para trás)
+  else if (to.col < from.col) {
+    e = 'right'; // Entra pela direita para dar a volta
+  }
+  // Padrão: entra pela esquerda
+  else {
+    e = 'left';
   }
 
   return { s, e };
