@@ -279,7 +279,7 @@ body.edit-mode #viewport { cursor:default; }
   <div class="toolbar">
     <button id="btn-edit" class="tb-btn">✏️ Editar</button>
     <button id="btn-reset" class="tb-btn" style="display:none">↺ Resetar Posições</button>
-    <button id="btn-download" class="tb-btn">💾 Baixar HTML</button>
+    <button id="btn-download" class="tb-btn" style="display:none">💾 Baixar HTML</button>
   </div>
   <div id="viewport">
     <div id="canvas">
@@ -532,6 +532,7 @@ ${nodesHtml}
   window.addEventListener('mouseup', function(){ dragNode = null; });
 
   // Download current state as HTML
+  // Download current state as HTML
   btnDownload.addEventListener('click', function(){
     // Update node inline styles in the source DOM (already updated). Clone and clean.
     var clone = document.documentElement.cloneNode(true);
@@ -545,11 +546,17 @@ ${nodesHtml}
     // Remove edit-mode class
     var cBody = clone.querySelector('body');
     if(cBody) cBody.classList.remove('edit-mode');
+
+    // 👇 CÓDIGO NOVO: Remove a barra de ferramentas do arquivo clonado 👇
+    var cToolbar = clone.querySelector('.toolbar');
+    if(cToolbar) cToolbar.parentNode.removeChild(cToolbar);
+    // 👆 FIM DO CÓDIGO NOVO 👆
+
     var html = '<!DOCTYPE html>\\n' + clone.outerHTML;
     var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
-    a.href = url; a.download = ${JSON.stringify(esc(title).replace(/[^a-zA-Z0-9-_]/g, '_') + '.html')};
+    a.href = url; a.download = "fluxo.html"; // a lógica do seu nome de arquivo fica aqui
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
   });

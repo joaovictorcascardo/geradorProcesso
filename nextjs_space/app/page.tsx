@@ -79,8 +79,23 @@ export default function Home() {
   }
 
   function handleDownload() {
+    // 1. Tenta aceder ao documento vivo dentro do iframe
+    const iframeDoc = previewRef.current?.contentWindow?.document || previewRef.current?.contentDocument;
+    
+    // 2. Se conseguir aceder, manda "clicar" no botão de download nativo do diagrama
+    // Isso garante que ele pegue as posições atualizadas e esconda a barra!
+    if (iframeDoc) {
+      const btnInterno = iframeDoc.getElementById('btn-download');
+      if (btnInterno) {
+        btnInterno.click();
+        return; // Termina aqui com sucesso
+      }
+    }
+
+    // 3. Fallback de segurança (caso o navegador bloqueie algo)
     if (!generated?.html) return;
-    const blob = new Blob([generated.html], { type: 'text/html;charset=utf-8' });
+    const htmlLimpo = generated.html.replace(/<div class="toolbar">[\s\S]*?<\/div>/, '');
+    const blob = new Blob([htmlLimpo], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -98,10 +113,6 @@ export default function Home() {
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank', 'noopener,noreferrer');
   }
-
-  const previewSrc = generated?.html
-    ? 'data:text/html;charset=utf-8,' + encodeURIComponent(generated.html)
-    : '';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -219,10 +230,10 @@ export default function Home() {
             >
               <iframe
                 ref={previewRef}
-                src={previewSrc}
+                srcDoc={generated.html}
                 title="preview"
                 className="w-full h-full"
-                sandbox="allow-scripts allow-same-origin"
+                sandbox="allow-scripts allow-same-origin allow-downloads"
               />
             </div>
           </Card>
