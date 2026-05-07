@@ -1,0 +1,31 @@
+# dependências
+/node_modules
+/.pnp
+.pnp.js
+
+# ficheiros de testes
+/coverage
+
+# ficheiros do Next.js
+/.next/
+/out/
+
+# ficheiros de build de produção
+/build
+
+# ficheiros de ambiente (NUNCA subir passwords ou chaves de API)
+.env
+.env*.local
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ficheiros do sistema operativo
+.DS_Store
+*.pem
+
+# Vercel
+.vercel
