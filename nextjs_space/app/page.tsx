@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react'; // <-- IMPORT DO useEffect ADICIONADO
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,7 @@ import { parseMermaid } from '@/lib/diagram/mermaid-parser';
 import { parseRaciCsv, inferProcessCode } from '@/lib/diagram/csv-parser';
 import { layoutGraph } from '@/lib/diagram/layout';
 import { generateHtml } from '@/lib/diagram/html-generator';
+import { generateProcessJson } from '@/lib/diagram/json-generator';
 
 export default function Home() {
   const [csvText, setCsvText] = useState<string>('');
@@ -45,10 +46,16 @@ export default function Home() {
       const layout = layoutGraph(graph);
       const procCode = inferProcessCode(raci);
       const effectiveTitle = processName || (procCode ? `${procCode} - Fluxograma Interativo` : '');
-      const html = generateHtml(graph, layout, raci, effectiveTitle);
+      
+      // GERA O HTML PARA O PREVIEW NA TELA
+      const htmlString = generateHtml(graph, layout, raci, effectiveTitle);
+      
+      // GERA O JSON
+      const jsonString = generateProcessJson(graph, layout, raci, effectiveTitle);      
       
       return {
-        html,
+        html: htmlString,
+        json: jsonString,
         nodeCount,
         edgeCount: graph.edges.length,
         raciCount: Object.keys(raci).length,
@@ -57,10 +64,25 @@ export default function Home() {
         dropDownCount: layout.dropDowns.size,
       };
     } catch (err: any) {
-      setErrorMsg('Erro ao gerar HTML: ' + (err?.message ?? 'desconhecido'));
+      setErrorMsg('Erro ao gerar diagrama: ' + (err?.message ?? 'desconhecido'));
       return null;
     }
   }, [csvText, mermaidText, processName]);
+
+  // =======================================================================
+  // NOVO: SALVA AUTOMATICAMENTE NO LOCALSTORAGE ASSIM QUE O JSON É GERADO
+  // =======================================================================
+  useEffect(() => {
+    if (generated?.json) {
+      try {
+        localStorage.setItem('json_processo_rubeus', generated.json);
+        console.log('✅ JSON salvo com sucesso no localStorage na chave: "json_processo_rubeus"');
+      } catch (err) {
+        console.error('❌ Erro ao salvar o JSON no localStorage:', err);
+      }
+    }
+  }, [generated?.json]);
+  // =======================================================================
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>, kind: 'csv' | 'mermaid') {
     const file = e?.target?.files?.[0];
@@ -151,7 +173,6 @@ export default function Home() {
 
       <div className="min-h-screen bg-[#cacaca59] font-poppins pb-12">
         
-        {/* Header no estilo Hero da Rubeus */}
         <div className="bg-[#00948a] pt-14 pb-28 text-center text-white relative z-10 shadow-lg hero-curve">
           <div className="flex items-center justify-center gap-3 mb-5">
             <div className="bg-white p-3 rounded-2xl shadow-xl">
@@ -167,7 +188,6 @@ export default function Home() {
         <div className="max-w-[1100px] mx-auto px-6 -mt-14 relative z-20">
           
           <div className="grid md:grid-cols-2 gap-8 mb-8">
-            {/* Card Matriz RACI */}
             <Card className="p-8 border-none shadow-xl bg-white" style={{ borderRadius: '24px' }}>
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-14 h-14 bg-[#e0f2f1] text-[#00948a] rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
@@ -193,7 +213,6 @@ export default function Home() {
               )}
             </Card>
 
-            {/* Card Mermaid TXT */}
             <Card className="p-8 border-none shadow-xl bg-white" style={{ borderRadius: '24px' }}>
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-14 h-14 bg-[#f1f5f9] text-[#1e293b] rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
@@ -220,7 +239,6 @@ export default function Home() {
             </Card>
           </div>
 
-          {/* Input de Título */}
           <Card className="p-8 mb-8 border-none shadow-lg bg-white" style={{ borderRadius: '24px' }}>
             <Label className="text-base font-bold text-[#1e293b] mb-4 block">
               Título Personalizado do Processo
@@ -233,7 +251,6 @@ export default function Home() {
             />
           </Card>
 
-          {/* Mensagem de Erro */}
           {errorMsg && (
             <div className="flex items-start gap-3 bg-[#fef2f2] border border-[#fecaca] text-[#b91c1c] p-5 mb-8 shadow-md rounded-2xl">
               <AlertCircle className="w-6 h-6 shrink-0" />
@@ -241,7 +258,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* Área de Preview */}
           {generated && (
             <Card className="p-8 border-none shadow-2xl bg-white" style={{ borderRadius: '28px' }}>
               <div className="flex flex-wrap items-center justify-between gap-5 mb-8 pb-4 border-b border-slate-50">
@@ -297,7 +313,6 @@ export default function Home() {
             </Card>
           )}
 
-          {/* Estado Vazio */}
           {!generated && !errorMsg && (
             <div className="text-center py-24 mt-8 bg-white/60 backdrop-blur-sm border-2 border-dashed border-slate-200 rounded-[32px]">
               <div className="w-24 h-24 bg-white shadow-lg rounded-full flex items-center justify-center mx-auto mb-6">

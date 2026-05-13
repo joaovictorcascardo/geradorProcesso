@@ -1,5 +1,4 @@
-import type { MermaidGraph } from './mermaid-parser';
-
+import type { Graph as MermaidGraph } from './mermaid-parser';
 export interface LaidOutNode {
   id: string;
   label: string;
